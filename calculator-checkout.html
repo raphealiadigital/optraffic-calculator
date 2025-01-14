@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Driver's Education Course Registration</title>
+    <script src="https://unpkg.com/react@17.0.2/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@17.0.2/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script
+      src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA7yieUlch8JpNowOABA09_R9Lg49gYDTU&v=weekly"
+      defer
+    ></script>
+    <link href="calculator-checkout.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS = "6010 Duclay Road #11 Jacksonville, Florida 32244";
+        const IA_MAPS_API_KEY = "AIzaSyA7yieUlch8JpNowOABA09_R9Lg49gYDTU";
+
+        const DriverEducationForm = () => {
+            const [formData, setFormData] = React.useState({
+                citationNumber: '',
+                course: '',
+                driversLicense: null,
+                firstName: '',
+                lastName: '',
+                phone: '',
+                email: '',
+                dateOfBirth: '',
+                address: '',
+                city: '',
+                state: '',
+                country: '',
+                termsAgreed: false
+            });
+            const [curPage, setCurPage] = React.useState(0);
+            const [mileageData, setMileageData] = React.useState({
+                distance: null,
+                destination: '',
+                source: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS
+            });
+
+            const handleChange = (e) => {
+                const { name, value, type, checked, files } = e.target;
+                setFormData(prevData => ({
+                    ...prevData,
+                    [name]: type === 'checkbox' ? checked : type === 'file' ? files[0] : value
+                }));
+            };
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                console.log('Form submitted:', formData);
+            };
+
+            const nextStep = async () => {
+                // Process Form Fields.
+                if (curPage == 0) {
+                    try {
+                        await submitQuestions();
+                    } catch(e) {
+                        alert(e);
+                        return;
+                    }
+                }
+
+                // Take pickup & dropoff information
+                if (curPage == 1) {
+                    if (!confirm(`We are picking you up at ${mileageData.destination} from Orange Park Traffic School with a total distance of ${mileageData.distance} both ways.`)) {
+                        return false;
+                    }
+                }
+
+                // Redirect to Payment.
+
+
+                setCurPage(curPage+1);
+            }
+
+            const submitQuestions = () => {
+                return new Promise((res,rej)=>{
+                    if (validateQuestions()) {
+                        res(true);
+                    } else {
+                        rej("Please correct form errors.");
+                    }
+                })                
+            }
+
+            const validateQuestions = () => {
+                return true;
+            }
+
+            const noPickUp = () => {
+                if (window.confirm("Are you sure you will have transporation to " + ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS + " and will require no pick up?")) {
+                    setMileageData({...mileageData, destination: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS});
+                    setCurPage(curPage+1);
+                }
+            }
+
+            const calculateDistance = (address) => {
+                setMileageData({...mileageData, destination: address});
+                // let origin = encodeURIComponent(mileageData.source);
+                // let dest = encodeURIComponent(address);
+                // let url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${dest}&units=imperial&key=${IA_MAPS_API_KEY}`;
+
+                const request = {
+                    origins: [mileageData.source],
+                    destinations: [address],
+                    travelMode: google.maps.TravelMode.DRIVING,
+                    unitSystem: google.maps.UnitSystem.IMPERIAL,
+                    avoidHighways: false,
+                    avoidTolls: false,
+                }
+
+                const service = new google.maps.DistanceMatrixService();
+                service.getDistanceMatrix(request)
+                .then((response)=>{
+                    let dist = response.rows[0].elements[0].distance.text;
+                    setMileageData({...mileageData, distance: dist});
+                })
+                .catch(e=>{
+                    alert('There was an error obtaining the distance.');
+                    console.error(e);
+                });
+            }
+
+            return (
+                <main>
+                    <aside>
+                        <article style={{display: curPage == 0 ? 'block' : 'none'}}  role="here">
+                            <form onSubmit={handleSubmit} role="here">
+                                <input type="text" name="citationNumber" value={formData.citationNumber} onChange={handleChange} placeholder="Citation Number" required />
+                                
+                                <div>
+                                    <label>Choose Your Course:</label>
+                                    <select name="course" value={formData.course} onChange={handleChange} required>
+                                        <option value="">Select a course</option>
+                                        <option value="BDI">Basic Driver Improvement Course (BDI) 4 hrs.</option>
+                                        <option value="TLSAE">Traffic Law and Substance Abuse Education (TLSAE)</option>
+                                        <option value="IDI">Intermediate Driver Improvement (IDI) 8 hrs.</option>
+                                        <option value="ADI8">Aggressive Driver Improvement (ADI) 8 hrs.</option>
+                                        <option value="ADI12">Advanced Driver Improvement (ADI) 12 hrs.</option>
+                                    </select>
+                                </div>
+                                
+                                <input type="file" name="driversLicense" onChange={handleChange} accept="image/*" required />
+                                
+                                <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" required />
+                                <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last Name" required />
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" required />
+                                <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+                                <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required />
+                                
+                                <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Street Address" required />
+                                <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" />
+                                <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" />
+                                <input type="text" name="country" value={formData.country} onChange={handleChange} placeholder="Country" />
+                                
+                                <label>
+                                    <input type="checkbox" name="termsAgreed" checked={formData.termsAgreed} onChange={handleChange} required />
+                                    I agree to receive text messages and emails from Orange Park Driving and Traffic School
+                                </label>                                
+                            </form>
+                        </article>
+                        <article style={{display: curPage == 1 ? 'block' : 'none'}} role="here">
+                            <h3>Where are we picking you up?</h3>
+                            <label> Pick Up Location:
+                                <input type="text" name="source" onBlur={(e)=>calculateDistance(e.target.value)} placeholder="123 Main Street, Jacksonville, FL" required />
+                            </label>
+                            {mileageData.distance && (<p style={{marginBottom:'30px'}}>Total Distance: {mileageData.distance}</p>) }
+                            <button className="danger" type="button" name="noPickUp" onClick={()=>{ noPickUp() }}>I require No Pick Up</button>
+                        </article>
+
+                        <article style={{display: curPage == 2 ? 'block' : 'none'}}>
+                        </article>
+                    </aside>
+                    <div className="actions">
+                        { curPage > 0 && (<button onClick={()=>{ setCurPage(curPage-1) }} type="button">Previous</button>) }
+                        <button type="button" onClick={()=>{ nextStep() }}>Next</button>
+                    </div>
+                </main> 
+            );
+        };
+
+        ReactDOM.render(<DriverEducationForm />, document.getElementById('root'));
+    </script>
+</body>
+</html>
+
