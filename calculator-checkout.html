@@ -29,7 +29,7 @@
 
             const [formData, setFormData] = React.useState({
                 citationNumber: '',
-                course: 'BDI',
+                course: '',
                 driversLicense: null,
                 firstName: '',
                 lastName: '',
@@ -44,7 +44,7 @@
             });
             const [attempted, setAttempted] = React.useState(false);
             const [submitted, setSubmitted] = React.useState(false);
-            const [curPage, setCurPage] = React.useState(1);
+            const [curPage, setCurPage] = React.useState(0);
             const [mileageData, setMileageData] = React.useState({
                 distance: null,
                 destination: '',
