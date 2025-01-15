@@ -58,3 +58,8 @@ button:hover {
 .actions button {
     width: 48%;
 }
+
+.errored input:invalid:not(:focus) {
+    border: 2px solid red;
+    background-color: #ffeeee;
+  }

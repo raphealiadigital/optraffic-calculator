@@ -21,10 +21,15 @@
         const ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS = "6010 Duclay Road #11 Jacksonville, Florida 32244";
         const IA_MAPS_API_KEY = "AIzaSyA7yieUlch8JpNowOABA09_R9Lg49gYDTU";
 
+        const REACHME_COURSE_KEY = "n9KocCA9h0LAb9n29odD";
+        const REACHME_CITATION_KEY = "3OWdg0MDmFaAgNyHSpzU";
+
         const DriverEducationForm = () => {
+            const formRef = React.useRef();
+
             const [formData, setFormData] = React.useState({
                 citationNumber: '',
-                course: '',
+                course: 'BDI',
                 driversLicense: null,
                 firstName: '',
                 lastName: '',
@@ -37,7 +42,9 @@
                 country: '',
                 termsAgreed: false
             });
-            const [curPage, setCurPage] = React.useState(0);
+            const [attempted, setAttempted] = React.useState(false);
+            const [submitted, setSubmitted] = React.useState(false);
+            const [curPage, setCurPage] = React.useState(1);
             const [mileageData, setMileageData] = React.useState({
                 distance: null,
                 destination: '',
@@ -57,11 +64,19 @@
                 console.log('Form submitted:', formData);
             };
 
+            const prevStep = () => {
+                if (curPage == 1 && submitted) {
+                    return;
+                }
+                setCurPage(curPage - 1);
+            }
+
             const nextStep = async () => {
                 // Process Form Fields.
                 if (curPage == 0) {
                     try {
                         await submitQuestions();
+                        setSubmitted(true);
                     } catch(e) {
                         alert(e);
                         return;
@@ -84,7 +99,53 @@
             const submitQuestions = () => {
                 return new Promise((res,rej)=>{
                     if (validateQuestions()) {
-                        res(true);
+                        let courses = {
+                            'BDI': "6-hour Basic Driving Course in 3 sessions",
+                            "TLSAE": "4-hour Florida 3 in 3 Driver Course in 2 sessions",
+                            "IDI": "8-hour Intermediate Course in 4 sessions",
+                            "ADI8": "10-hour Advanced Course in 5 sessions",
+                            "ADI12": "12-hour Advanced Superior Course in 6 sessions"
+                        }
+                        const formDataObject = new FormData();
+                        formDataObject.append("formData", JSON.stringify(
+                            {
+                                [REACHME_CITATION_KEY]: formData.citationNumber,
+                                [REACHME_COURSE_KEY]: courses[formData.course],
+                                "first_name":formData.firstName,
+                                "last_name":formData.lastName,
+                                "phone": formData.phone,
+                                "terms_and_conditions":"I agree to receive text messages and emails from Orange Park Driving and Traffic School about promotions, updates, and reminders. Message and data rates may apply. Reply \"STOP\" to unsubscribe.",
+                                "email": formData.email,
+                                "date_of_birth": formData.dateOfBirth,
+                                "address": formData.address,
+                                "city": formData.city,
+                                "state": formData.state,
+                                "country":formData.country,
+                                "postal_code": "",
+                                "formId":"np3PjNXdpnjjxfSdtQDY",
+                                "location_id":"rAqA0qePdg5HU5psHFZX",
+                                "eventData":{"source":"direct","referrer":"","keyword":"","adSource":"","url_params":{},"page":{"url":"https://app.reachmepro.com/v2/preview/UXxaHP4Suwhd5VBbDmfb","title":""},"timestamp":1736944602291,"campaign":"","contactSessionIds":{"ids":["1b05073f-c486-41e4-bcf8-9021d6e37f2f"]},"fbp":"","fbc":"","type":"page-visit","parentId":"UXxaHP4Suwhd5VBbDmfb","pageVisitType":"funnel","domain":"app.reachmepro.com","version":"v3","parentName":"","fingerprint":null,"documentURL":"https://app.reachmepro.com/v2/preview/UXxaHP4Suwhd5VBbDmfb","gaClientId":"GA1.2.2009418773.1730870192","fbEventId":"b5d2342f-d9c4-4cad-a194-891e6958613b","medium":"form","mediumId":"np3PjNXdpnjjxfSdtQDY"},"funneEventData":{"event_type":"optin","domain_name":"app.reachmepro.com","page_url":"/v2/preview/UXxaHP4Suwhd5VBbDmfb","funnel_id":"yqo14UtT8QGeBARNMVc2","page_id":"UXxaHP4Suwhd5VBbDmfb","funnel_step_id":"e5f22616-2f7d-4ff4-a025-4191d81bfe01"},
+                                "Timezone":"America/New_York (GMT-05:00)","paymentContactId":{}
+                            }
+                        ));
+                        axios.post(
+                            `https://backend.leadconnectorhq.com/forms/submit`, 
+                            formDataObject,
+                            {
+                                headers: {
+                                    'Content-Type': 'multipart/form-data',
+                                    'Authorization': 'Bearer pit-c73f31f6-89d6-40fa-9162-00cd4216ee3b',
+                                    'Version': '2021-07-28'
+                                }
+                            })
+                            .then(response => {
+                                res(response.data)
+                                console.log('Response:', response.data);
+                            })
+                            .catch(error => {
+                                rej(error.message);
+                                console.error('Error:', error.response ? error.response.data : error.message);
+                            }); 
                     } else {
                         rej("Please correct form errors.");
                     }
@@ -92,7 +153,8 @@
             }
 
             const validateQuestions = () => {
-                return true;
+                setAttempted(true);
+                return formRef.current.reportValidity();
             }
 
             const noPickUp = () => {
@@ -121,7 +183,7 @@
                 service.getDistanceMatrix(request)
                 .then((response)=>{
                     let dist = response.rows[0].elements[0].distance.text;
-                    setMileageData({...mileageData, distance: dist});
+                    setMileageData({...mileageData, distance: Math.ceil(parseFloat(dist))});
                 })
                 .catch(e=>{
                     alert('There was an error obtaining the distance.');
@@ -129,11 +191,26 @@
                 });
             }
 
+            const checkout = () => {
+                axios.get(`https://tvft0y4gw7.execute-api.us-east-2.amazonaws.com/default/optraffic_calculator-checkout?mileage=${mileageData.distance}&course=${formData.course}`, {
+                    headers: {
+                        'X-API-KEY': "0CzWNJrHdF5ZSTo5hdFKYM41uDrXeKXb"
+                    }
+                })
+                .then(({data})=> {
+                    window.location = data.checkout_session.url;
+                })
+                .catch(e=>{
+                    console.error(e);
+                    alert('error with checkout, try ');
+                })
+            }
+
             return (
                 <main>
                     <aside>
                         <article style={{display: curPage == 0 ? 'block' : 'none'}}  role="here">
-                            <form onSubmit={handleSubmit} role="here">
+                            <form className={ attempted ? 'errored' : ''} onSubmit={handleSubmit} role="here" ref={formRef}>
                                 <input type="text" name="citationNumber" value={formData.citationNumber} onChange={handleChange} placeholder="Citation Number" required />
                                 
                                 <div>
@@ -172,16 +249,17 @@
                             <label> Pick Up Location:
                                 <input type="text" name="source" onBlur={(e)=>calculateDistance(e.target.value)} placeholder="123 Main Street, Jacksonville, FL" required />
                             </label>
-                            {mileageData.distance && (<p style={{marginBottom:'30px'}}>Total Distance: {mileageData.distance}</p>) }
+                            { mileageData.distance && (<p style={{marginBottom:'30px'}} role="">Total Distance: {mileageData.distance}</p>)}
                             <button className="danger" type="button" name="noPickUp" onClick={()=>{ noPickUp() }}>I require No Pick Up</button>
                         </article>
 
-                        <article style={{display: curPage == 2 ? 'block' : 'none'}}>
+                        <article style={{display: curPage == 2 ? 'block' : 'none'}} role="">
+                            <button onClick={()=>checkout()} class="button">Proceed To Checkout</button>
                         </article>
                     </aside>
                     <div className="actions">
-                        { curPage > 0 && (<button onClick={()=>{ setCurPage(curPage-1) }} type="button">Previous</button>) }
-                        <button type="button" onClick={()=>{ nextStep() }}>Next</button>
+                        { curPage > 0 && !(curPage == 1 && submitted) && (<button onClick={()=>{ prevStep() }} type="button">Previous</button>) }
+                        { curPage < 2 && (<button type="button" onClick={()=>{ nextStep() }}>Next</button>) }
                     </div>
                 </main> 
             );
