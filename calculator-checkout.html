@@ -46,7 +46,7 @@
             const [submitted, setSubmitted] = React.useState(false);
             const [curPage, setCurPage] = React.useState(0);
             const [mileageData, setMileageData] = React.useState({
-                distance: null,
+                distance: 0,
                 destination: '',
                 source: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS
             });
@@ -85,9 +85,10 @@
 
                 // Take pickup & dropoff information
                 if (curPage == 1) {
-                    if (!confirm(`We are picking you up at ${mileageData.destination} from Orange Park Traffic School with a total distance of ${mileageData.distance} both ways.`)) {
+                    if (!confirm(`We are picking you up at ${mileageData.destination} from Orange Park Traffic School with a total distance of ${mileageData.distance * 2} both ways.`)) {
                         return false;
                     }
+                    setTimeout(()=>checkout(),1000);
                 }
 
                 // Redirect to Payment.
@@ -124,7 +125,6 @@
                                 "postal_code": "",
                                 "formId":"np3PjNXdpnjjxfSdtQDY",
                                 "location_id":"rAqA0qePdg5HU5psHFZX",
-                                "eventData":{"source":"direct","referrer":"","keyword":"","adSource":"","url_params":{},"page":{"url":"https://app.reachmepro.com/v2/preview/UXxaHP4Suwhd5VBbDmfb","title":""},"timestamp":1736944602291,"campaign":"","contactSessionIds":{"ids":["1b05073f-c486-41e4-bcf8-9021d6e37f2f"]},"fbp":"","fbc":"","type":"page-visit","parentId":"UXxaHP4Suwhd5VBbDmfb","pageVisitType":"funnel","domain":"app.reachmepro.com","version":"v3","parentName":"","fingerprint":null,"documentURL":"https://app.reachmepro.com/v2/preview/UXxaHP4Suwhd5VBbDmfb","gaClientId":"GA1.2.2009418773.1730870192","fbEventId":"b5d2342f-d9c4-4cad-a194-891e6958613b","medium":"form","mediumId":"np3PjNXdpnjjxfSdtQDY"},"funneEventData":{"event_type":"optin","domain_name":"app.reachmepro.com","page_url":"/v2/preview/UXxaHP4Suwhd5VBbDmfb","funnel_id":"yqo14UtT8QGeBARNMVc2","page_id":"UXxaHP4Suwhd5VBbDmfb","funnel_step_id":"e5f22616-2f7d-4ff4-a025-4191d81bfe01"},
                                 "Timezone":"America/New_York (GMT-05:00)","paymentContactId":{}
                             }
                         ));
@@ -159,8 +159,9 @@
 
             const noPickUp = () => {
                 if (window.confirm("Are you sure you will have transporation to " + ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS + " and will require no pick up?")) {
-                    setMileageData({...mileageData, destination: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS});
+                    setMileageData({...mileageData, destination: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS, distance: 0.002});
                     setCurPage(curPage+1);
+                    setTimeout(()=>checkout(),1000);
                 }
             }
 
@@ -216,27 +217,55 @@
                                 <div>
                                     <label>Choose Your Course:</label>
                                     <select name="course" value={formData.course} onChange={handleChange} required>
-                                        <option value="">Select a course</option>
+                                        <option disabled selected value="">Select a course</option>
                                         <option value="BDI">Basic Driver Improvement Course (BDI) 4 hrs.</option>
                                         <option value="TLSAE">Traffic Law and Substance Abuse Education (TLSAE)</option>
                                         <option value="IDI">Intermediate Driver Improvement (IDI) 8 hrs.</option>
                                         <option value="ADI8">Aggressive Driver Improvement (ADI) 8 hrs.</option>
                                         <option value="ADI12">Advanced Driver Improvement (ADI) 12 hrs.</option>
                                     </select>
+                                    <p id="courseError" className="error-message">Please select a course.</p>
                                 </div>
                                 
+                                {/* Driver's License */}
                                 <input type="file" name="driversLicense" onChange={handleChange} accept="image/*" required />
-                                
+                                <p id="driversLicenseError" className="error-message">Please upload a valid image file for your driver's license.</p>
+
+                                {/* First Name */}
                                 <input type="text" name="firstName" value={formData.firstName} onChange={handleChange} placeholder="First Name" required />
+                                <p id="firstNameError" className="error-message">First name is required.</p>
+
+                                {/* Last Name */}
                                 <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} placeholder="Last Name" required />
-                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" required />
+                                <p id="lastNameError" className="error-message">Last name is required.</p>
+
+                                {/* Phone */}
+                                <input type="tel" name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" pattern="[0-9\-]{10,12}" required />
+                                <p id="phoneError" className="error-message">Please enter a valid phone number (10-12 digits, hyphens allowed).</p>
+
+                                {/* Email */}
                                 <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
+                                <p id="emailError" className="error-message">Please enter a valid email address.</p>
+
+                                {/* Date of Birth */}
                                 <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} required />
-                                
+                                <p id="dateOfBirthError" className="error-message">Please enter a valid date of birth.</p>
+
+                                {/* Address */}
                                 <input type="text" name="address" value={formData.address} onChange={handleChange} placeholder="Street Address" required />
+                                <p id="addressError" className="error-message">Street address is required.</p>
+
+                                {/* City */}
                                 <input type="text" name="city" value={formData.city} onChange={handleChange} placeholder="City" />
+                                <p id="cityError" className="error-message">Please enter a valid city name.</p>
+
+                                {/* State */}
                                 <input type="text" name="state" value={formData.state} onChange={handleChange} placeholder="State" />
+                                <p id="stateError" className="error-message">Please enter a valid state name.</p>
+
+                                {/* Country */}
                                 <input type="text" name="country" value={formData.country} onChange={handleChange} placeholder="Country" />
+                                <p id="countryError" className="error-message">Please enter a valid country name.</p>
                                 
                                 <label>
                                     <input type="checkbox" name="termsAgreed" checked={formData.termsAgreed} onChange={handleChange} required />

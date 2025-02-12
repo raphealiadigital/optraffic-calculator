@@ -1,21 +1,44 @@
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+import Stripe from 'stripe';
+
+const mode = process.env.SYSTEM_MODE;
+
+const stripe = new Stripe(mode == 'PROD' ? process.env.STRIPE_SECRET_PROD_KEY : process.env.STRIPE_SECRET_KEY, {
+  apiVersion: '2023-10-16', // Use the latest API version
+});
 
 const COURSES = {
-    'BDI': 'price_1QhUg4E0YfZwZgx7RJR2akhc',
-    'TLSAE': 'price_1QhUgSE0YfZwZgx7Rk6vjjOh',
-    'IDI': 'price_1QhUgjE0YfZwZgx7CZJHgQDu',
-    'ADI8': 'price_1QhUh3E0YfZwZgx7UFWjETDo',
-    'ADI12': 'price_1QhUhCE0YfZwZgx7AtTRMPbv'
+    'BID': mode == 'PROD' ? 'price_1QlyPWP8nuWWRch58VANnET5' : 'price_1QlyJ0P8nuWWRch5MkdBiDb2',
+    'BDI': mode == 'PROD' ? 'price_1QlyPWP8nuWWRch58VANnET5' : 'price_1QlyJ0P8nuWWRch5MkdBiDb2',
+    'TLSAE': mode == 'PROD' ? 'price_1QlyO0P8nuWWRch51lgFk8nl' : 'price_1QlyHrP8nuWWRch5aJXmprLW',
+    'IDI': mode == 'PROD' ? 'price_1QlyQ3P8nuWWRch5TXLQYL0J' : 'price_1QlyJaP8nuWWRch5e8QSjuJh',
+    'ADI8': mode == 'PROD' ? 'price_1QlyQeP8nuWWRch5FV8t1CGz' : 'price_1QlyKJP8nuWWRch5oBth9AIk',
+    'ADI12': mode == 'PROD' ? 'price_1QlyRCP8nuWWRch5ZpvwjyIY' : 'price_1QlyKqP8nuWWRch5UWUAWf5P'
 };
-const MILEAGE_PRICE_ID = 'price_1QhUhfE0YfZwZgx7Pcd4L3Xt';
+const MILEAGE_PRICE_ID = mode == 'PROD' ? 'price_1QlyN4P8nuWWRch5OzvaC9e8' : 'price_1QlyLwP8nuWWRch5UejKLzaR';
 
-exports.handler = async (event) => {
-    const apiKey = event.headers['X-API-KEY'];
+export const handler = async (event) => {
+    const apiKey = event.headers['x-api-key'];
+    const responseHeaders = {
+        "Access-Control-Allow-Origin": "*", // Or specify your domain
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Methods": "*" // Add other methods as needed
+      };
+
+
+      if (event.requestContext.http.method === 'OPTIONS') {
+        return {
+            statusCode: 200,
+            headers: responseHeaders,
+            body: JSON.stringify({ message: 'Preflight request successful' }),
+        };
+    }
 
     // Check if the API key matches the expected value (from environment variable)
-    if (apiKey !== process.env.EXPECTED_API_KEY) {
+    if (apiKey != process.env.EXPECTED_API_KEY) {
+        console.log(`Invalid API key: ${apiKey}, expected: ${process.env.EXPECTED_API_KEY}, HEADERS:${JSON.stringify(event.headers)}`);
         return {
             statusCode: 403,
+            headers: responseHeaders,
             body: JSON.stringify({ message: 'Forbidden: Invalid API key' }),
         };
     }
@@ -27,30 +50,37 @@ exports.handler = async (event) => {
     if (!mileage) {
         return {
             statusCode: 400,
+            headers: responseHeaders,
             body: JSON.stringify({ message: 'Bad Request: Missing mileage query parameter' }),
         };
-    }
+        mileage = parseInt(mileage) || 0;
+    } 
     if (!course || !COURSES[course]) {
         return {
             statusCode: 400,
+            headers: responseHeaders,
             body: JSON.stringify({ message: 'Bad Request: Missing or invalid course query parameter' }),
         };
+    }
+
+    let lineItems = [
+        {
+            price: COURSES[course],
+            quantity: 1,
+        },        
+    ];
+    if (mileage > 1) {
+        lineItems.push({
+            price: MILEAGE_PRICE_ID,
+            quantity: mileage * 2,
+        });
     }
 
     try {
         // Create Stripe checkout session with the predefined products
         const checkoutSession = await stripe.checkout.sessions.create({
             payment_method_types: ['card'],
-            line_items: [
-                {
-                    price: COURSES[course],
-                    quantity: 1,
-                },
-                {
-                    price: MILEAGE_PRICE_ID,
-                    quantity: mileage,
-                },
-            ],
+            line_items: lineItems,
             mode: 'payment',
             success_url: process.env.SUCCESS_URL,
             cancel_url: process.env.CANCEL_URL,
@@ -58,19 +88,14 @@ exports.handler = async (event) => {
 
         return {
             statusCode: 200,
-            body: JSON.stringify({ checkout_session_id: checkoutSession.id }),
+            headers: responseHeaders,
+            body: JSON.stringify({ checkout_session: checkoutSession }),
         };
     } catch (error) {
         return {
             statusCode: 500,
+            headers: responseHeaders,
             body: JSON.stringify({ error: error.message }),
         };
     }
 };
-
-
-/* form submission
-
-
-{"3OWdg0MDmFaAgNyHSpzU":"fsfdsfdf","n9KocCA9h0LAb9n29odD":"6-hour Basic Driving Course in 3 sessions","first_name":"fsf","last_name":"fsdfds","phone":"+16154774125","terms_and_conditions":"I agree to receive text messages and emails from Orange Park Driving and Traffic School about promotions, updates, and reminders. Message and data rates may apply. Reply \"STOP\" to unsubscribe.","email":"test@tehgol.com","date_of_birth":"01-02-2025","address":"123 Main Street, White Plains, NY, USA","city":"White Plains","state":"New York","country":"US","postal_code":"10601","formId":"np3PjNXdpnjjxfSdtQDY","location_id":"rAqA0qePdg5HU5psHFZX","eventData":{"source":"direct","referrer":"","keyword":"","adSource":"","url_params":{},"page":{"url":"https://app.reachmepro.com/v2/preview/UXxaHP4Suwhd5VBbDmfb","title":""},"timestamp":1736944602291,"campaign":"","contactSessionIds":{"ids":["1b05073f-c486-41e4-bcf8-9021d6e37f2f"]},"fbp":"","fbc":"","type":"page-visit","parentId":"UXxaHP4Suwhd5VBbDmfb","pageVisitType":"funnel","domain":"app.reachmepro.com","version":"v3","parentName":"","fingerprint":null,"documentURL":"https://app.reachmepro.com/v2/preview/UXxaHP4Suwhd5VBbDmfb","gaClientId":"GA1.2.2009418773.1730870192","fbEventId":"b5d2342f-d9c4-4cad-a194-891e6958613b","medium":"form","mediumId":"np3PjNXdpnjjxfSdtQDY"},"funneEventData":{"event_type":"optin","domain_name":"app.reachmepro.com","page_url":"/v2/preview/UXxaHP4Suwhd5VBbDmfb","funnel_id":"yqo14UtT8QGeBARNMVc2","page_id":"UXxaHP4Suwhd5VBbDmfb","funnel_step_id":"e5f22616-2f7d-4ff4-a025-4191d81bfe01"},"Timezone":"America/New_York (GMT-05:00)","paymentContactId":{}}
-*/

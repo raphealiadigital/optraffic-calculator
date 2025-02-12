@@ -59,7 +59,27 @@ button:hover {
     width: 48%;
 }
 
-.errored input:invalid:not(:focus) {
+.errored input:invalid:not(:focus), .errored select:invalid:not(:focus) {
     border: 2px solid red;
     background-color: #ffeeee;
   }
+
+.error-message {
+    display: none;
+    margin: -10px 0 20px 0px;
+}
+
+.errored input:invalid + .error-message, .errored select:invalid + .error-message {
+    display: block;
+    color: red;
+}
+
+/* Optional: Style invalid inputs */
+.errored input:invalid, .errored select:invalid {
+    border: 2px solid red;
+}
+
+/* Optional: Style valid inputs (for contrast) */
+.errored input:valid, .errored select:valid {
+    border: 2px solid green;
+}
