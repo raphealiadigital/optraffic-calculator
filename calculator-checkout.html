@@ -105,7 +105,8 @@
                             "TLSAE": "4-hour Florida 3 in 3 Driver Course in 2 sessions",
                             "IDI": "8-hour Intermediate Course in 4 sessions",
                             "ADI8": "10-hour Advanced Course in 5 sessions",
-                            "ADI12": "12-hour Advanced Superior Course in 6 sessions"
+                            "ADI12": "12-hour Advanced Superior Course in 6 sessions",
+                            "ADI12CO": "12-hour Advanced Superior Course Court Ordered"
                         }
                         const formDataObject = new FormData();
                         formDataObject.append("formData", JSON.stringify(
@@ -223,6 +224,7 @@
                                         <option value="IDI">Intermediate Driver Improvement (IDI) 8 hrs.</option>
                                         <option value="ADI8">Aggressive Driver Improvement (ADI) 8 hrs.</option>
                                         <option value="ADI12">Advanced Driver Improvement (ADI) 12 hrs.</option>
+                                        <option value="ADI12CO">Advanced Driver Improvement (ADICO) 12 hrs. Court Ordered</option>
                                     </select>
                                     <p id="courseError" className="error-message">Please select a course.</p>
                                 </div>

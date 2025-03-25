@@ -12,7 +12,8 @@ const COURSES = {
     'TLSAE': mode == 'PROD' ? 'price_1QlyO0P8nuWWRch51lgFk8nl' : 'price_1QlyHrP8nuWWRch5aJXmprLW',
     'IDI': mode == 'PROD' ? 'price_1QlyQ3P8nuWWRch5TXLQYL0J' : 'price_1QlyJaP8nuWWRch5e8QSjuJh',
     'ADI8': mode == 'PROD' ? 'price_1QlyQeP8nuWWRch5FV8t1CGz' : 'price_1QlyKJP8nuWWRch5oBth9AIk',
-    'ADI12': mode == 'PROD' ? 'price_1QlyRCP8nuWWRch5ZpvwjyIY' : 'price_1QlyKqP8nuWWRch5UWUAWf5P'
+    'ADI12': mode == 'PROD' ? 'price_1QlyRCP8nuWWRch5ZpvwjyIY' : 'price_1QlyKqP8nuWWRch5UWUAWf5P',
+    'ADI12CO' : mode == 'PROD' ? 'price_1R6cUOP8nuWWRch5OR2cimUc' : 'price_1R6cVGP8nuWWRch5yZtj7ezT'
 };
 const MILEAGE_PRICE_ID = mode == 'PROD' ? 'price_1QlyN4P8nuWWRch5OzvaC9e8' : 'price_1QlyLwP8nuWWRch5UejKLzaR';
 
