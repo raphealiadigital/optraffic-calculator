@@ -7,10 +7,10 @@ const stripe = new Stripe(mode == 'PROD' ? process.env.STRIPE_SECRET_PROD_KEY : 
 });
 
 const COURSES = {
-    'BID': mode == 'PROD' ? 'price_1QlyPWP8nuWWRch58VANnET5' : 'price_1QlyJ0P8nuWWRch5MkdBiDb2',
-    'BDI': mode == 'PROD' ? 'price_1QlyPWP8nuWWRch58VANnET5' : 'price_1QlyJ0P8nuWWRch5MkdBiDb2',
-    'TLSAE': mode == 'PROD' ? 'price_1QlyO0P8nuWWRch51lgFk8nl' : 'price_1QlyHrP8nuWWRch5aJXmprLW',
-    'IDI': mode == 'PROD' ? 'price_1QlyQ3P8nuWWRch5TXLQYL0J' : 'price_1QlyJaP8nuWWRch5e8QSjuJh',
+    'BID': mode == 'PROD' ? 'price_1R6bg2P8nuWWRch5AEhJKP7a' : 'price_1QlyJ0P8nuWWRch5MkdBiDb2',
+    'BDI': mode == 'PROD' ? 'price_1R6bg2P8nuWWRch5AEhJKP7a' : 'price_1QlyJ0P8nuWWRch5MkdBiDb2',
+    'TLSAE': mode == 'PROD' ? 'price_1R6bojP8nuWWRch5fKDG6V2w' : 'price_1QlyHrP8nuWWRch5aJXmprLW',
+    'IDI': mode == 'PROD' ? 'price_1R6brgP8nuWWRch5PwUqxWPt' : 'price_1QlyJaP8nuWWRch5e8QSjuJh',
     'ADI8': mode == 'PROD' ? 'price_1QlyQeP8nuWWRch5FV8t1CGz' : 'price_1QlyKJP8nuWWRch5oBth9AIk',
     'ADI12': mode == 'PROD' ? 'price_1QlyRCP8nuWWRch5ZpvwjyIY' : 'price_1QlyKqP8nuWWRch5UWUAWf5P',
     'ADI12CO' : mode == 'PROD' ? 'price_1R6cUOP8nuWWRch5OR2cimUc' : 'price_1R6cVGP8nuWWRch5yZtj7ezT'
