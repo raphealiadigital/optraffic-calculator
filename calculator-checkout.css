@@ -5,6 +5,10 @@ body {
     justify-content: center;
     padding: 20px;
 }
+body main.rdMain {
+    max-width: 800px; 
+ margin: 0 auto;
+}
 form {
     background-color: white;
     padding: 30px;

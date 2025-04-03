@@ -24,6 +24,10 @@
         const REACHME_COURSE_KEY = "n9KocCA9h0LAb9n29odD";
         const REACHME_CITATION_KEY = "3OWdg0MDmFaAgNyHSpzU";
 
+        const PAGE_STEP_FORM = "form";
+        const PAGE_STEP_MILEAGE = "mileage";
+        const PAGE_STEP_THANKS = "thanks"
+
         const DriverEducationForm = () => {
             const formRef = React.useRef();
 
@@ -50,6 +54,26 @@
                 destination: '',
                 source: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS
             });
+
+            React.useEffect(()=>{
+                window.nextFormStep = ()=> { nextStep(); };
+                let urlParams = new URLSearchParams(window.location.search);
+                
+                // Check url for step to know what page to display for user.
+                if (urlParams.get('step')) {
+                    let desiredStep = urlParams.get('step');
+                    if (desiredStep == PAGE_STEP_FORM) {
+                        setCurPage(0);
+                    }
+                    if (desiredStep == PAGE_STEP_MILEAGE) {
+                        setCurPage(1);
+                    }
+                    if (desiredStep == PAGE_STEP_THANKS) {
+                        setCurPage(3);
+                    }
+                    console.log("Loading Current Page for step: " + desiredStep);
+                }
+            },[]);
 
             const handleChange = (e) => {
                 const { name, value, type, checked, files } = e.target;
@@ -123,7 +147,7 @@
                                 "city": formData.city,
                                 "state": formData.state,
                                 "country":formData.country,
-                                "postal_code": "",
+                                "postal_code": "32244",
                                 "formId":"np3PjNXdpnjjxfSdtQDY",
                                 "location_id":"rAqA0qePdg5HU5psHFZX",
                                 "Timezone":"America/New_York (GMT-05:00)","paymentContactId":{}
@@ -209,7 +233,7 @@
             }
 
             return (
-                <main>
+                <main className="rdMain">
                     <aside>
                         <article style={{display: curPage == 0 ? 'block' : 'none'}}  role="here">
                             <form className={ attempted ? 'errored' : ''} onSubmit={handleSubmit} role="here" ref={formRef}>
@@ -287,10 +311,14 @@
                         <article style={{display: curPage == 2 ? 'block' : 'none'}} role="">
                             <button onClick={()=>checkout()} class="button">Proceed To Checkout</button>
                         </article>
+                        <article style={{display: curPage == 3 ? 'block' : 'none'}}  role="here">
+                            Thank you for completing the initial registration. The next steps are for you to receive and email with a link to book your instruction times. 
+                            Feel free to reach out to us if you have any questions or need special assistance.
+                        </article>
                     </aside>
                     <div className="actions">
-                        { curPage > 0 && !(curPage == 1 && submitted) && (<button onClick={()=>{ prevStep() }} type="button">Previous</button>) }
-                        { curPage < 2 && (<button type="button" onClick={()=>{ nextStep() }}>Next</button>) }
+                        { curPage > 0 && curPage != 3 && !(curPage == 1 && submitted) && (<button onClick={()=>{ prevStep() }} type="button">Previous</button>) }
+                        { curPage < 3 && (<button type="button" onClick={()=>{ nextStep() }}>Next</button>) }
                     </div>
                 </main> 
             );
