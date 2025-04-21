@@ -12,6 +12,7 @@
       src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA7yieUlch8JpNowOABA09_R9Lg49gYDTU&v=weekly"
       defer
     ></script>
+    <script src="https://reachme.optrafficschool.com/js/form_embed.js"></script>
     <link href="calculator-checkout.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
@@ -23,13 +24,36 @@
 
         const REACHME_COURSE_KEY = "n9KocCA9h0LAb9n29odD";
         const REACHME_CITATION_KEY = "3OWdg0MDmFaAgNyHSpzU";
+        const REACHME_HEADERS = {
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': 'Bearer pit-c73f31f6-89d6-40fa-9162-00cd4216ee3b',
+                                    'Version': '2021-07-28'
+                                }
+                            };
 
         const PAGE_STEP_FORM = "form";
         const PAGE_STEP_MILEAGE = "mileage";
         const PAGE_STEP_THANKS = "thanks"
+        const PAGE_STEP_THANKS_CANCEL = "thanks_cancel"
+        const PAGE_STEP_PAY = 'pay';
+        const QUERY_STEP_KEY = 'step';
+        const QUERY_COURSE_KEY = 'course';
+        const QUERY_ADDRESS_KEY = 'full_address';
+        const QUERY_CONTACTID_KEY = 'cid';
+        const QUERY_FORM_ID = "form_id";
+
+        const LoadingIcon = ({size}) => {
+
+            return (
+                
+                <svg style={{width: size =='small' ? '75px' : '150px'}} fill="hsl(228, 97%, 42%)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z" opacity=".25"/><path d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"><animateTransform attributeName="transform" type="rotate" dur="0.75s" values="0 12 12;360 12 12" repeatCount="indefinite"/></path></svg>
+            )
+        }
 
         const DriverEducationForm = () => {
             const formRef = React.useRef();
+            const pickUpLocationRef = React.useRef();
 
             const [formData, setFormData] = React.useState({
                 citationNumber: '',
@@ -46,6 +70,9 @@
                 country: '',
                 termsAgreed: false
             });
+            const [contactId, setContactId] = React.useState('');
+            const [formId, setFormId] = React.useState('');
+            const [calculateLoading, setCalculateLoading] = React.useState(false);
             const [attempted, setAttempted] = React.useState(false);
             const [submitted, setSubmitted] = React.useState(false);
             const [curPage, setCurPage] = React.useState(0);
@@ -57,11 +84,56 @@
 
             React.useEffect(()=>{
                 window.nextFormStep = ()=> { nextStep(); };
-                let urlParams = new URLSearchParams(window.location.search);
                 
-                // Check url for step to know what page to display for user.
-                if (urlParams.get('step')) {
-                    let desiredStep = urlParams.get('step');
+                let urlParams = new URLSearchParams(window.location.search);
+                let desiredStep = urlParams.get(QUERY_STEP_KEY);
+                let course = urlParams.get(QUERY_COURSE_KEY);
+                let address = urlParams.get(QUERY_ADDRESS_KEY);
+                let contact_id = urlParams.get(QUERY_CONTACTID_KEY);
+                let form_id = urlParams.get(QUERY_FORM_ID) || window.currentFormId;
+                let courseKey = null;
+
+                window.getTags = ()=>{
+                    axios.get(`https://services.leadconnectorhq.com/contacts/${contact_id}`, REACHME_HEADERS)
+                    .then(r=>{
+                        console.log('current tags',r.data.contact.tags)
+                    })
+                }
+                window.setTag = (tag)=>{
+                    markContactAsPaid(contact_id,tag);
+                }
+
+                // Check if form is specified
+                if (form_id) {
+                    setFormId(form_id);
+                }
+
+                 // Check url for course & address details.     
+                 if (contact_id) {
+                    setContactId(contact_id);
+                    console.log('Current contact id is: '+ contact_id);
+                 }           
+                 if (course) {
+                    courseKey = course.split('(')[1].split(')')[0];
+                    setFormData({...formData, course: courseKey});  
+                    console.log("current course is " + courseKey);
+                }
+                
+                if (address) {
+                    setMileageData({...mileageData, destination: address});
+                    pickUpLocationRef.current.value = address;
+                    if (address.length > 5) {
+                        setCalculateLoading(true);
+                        calculateDistance(address)
+                        .then(d=>{
+                            setCalculateLoading(false);
+                        });
+                    }
+                    console.log("current address is " + address);
+                }
+                
+                // Check url for step to know what page to display for user.                
+                if (desiredStep) {
                     if (desiredStep == PAGE_STEP_FORM) {
                         setCurPage(0);
                     }
@@ -70,9 +142,20 @@
                     }
                     if (desiredStep == PAGE_STEP_THANKS) {
                         setCurPage(3);
+
+                        markContactAsPaid(contact_id);
+                    }
+                    if (desiredStep == PAGE_STEP_THANKS_CANCEL) {
+                        setCurPage(4);
+                    }
+                    if (desiredStep == PAGE_STEP_PAY) {
+                        setCurPage(2);
+                        checkout(courseKey, 0,contact_id);
                     }
                     console.log("Loading Current Page for step: " + desiredStep);
                 }
+
+               
             },[]);
 
             const handleChange = (e) => {
@@ -112,7 +195,7 @@
                     if (!confirm(`We are picking you up at ${mileageData.destination} from Orange Park Traffic School with a total distance of ${mileageData.distance * 2} both ways.`)) {
                         return false;
                     }
-                    setTimeout(()=>checkout(),1000);
+                    setTimeout(()=>checkout(formData.course,mileageData.distance, contactId),1000);
                 }
 
                 // Redirect to Payment.
@@ -186,56 +269,88 @@
                 if (window.confirm("Are you sure you will have transporation to " + ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS + " and will require no pick up?")) {
                     setMileageData({...mileageData, destination: ORANGE_PARK_TRAFFIC_SCHOOL_ADDRESS, distance: 0.002});
                     setCurPage(curPage+1);
-                    setTimeout(()=>checkout(),1000);
+                    setTimeout(()=>{ checkout(formData.course,0); },1000);
                 }
             }
 
             const calculateDistance = (address) => {
-                setMileageData({...mileageData, destination: address});
                 // let origin = encodeURIComponent(mileageData.source);
                 // let dest = encodeURIComponent(address);
                 // let url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${dest}&units=imperial&key=${IA_MAPS_API_KEY}`;
 
-                const request = {
-                    origins: [mileageData.source],
-                    destinations: [address],
-                    travelMode: google.maps.TravelMode.DRIVING,
-                    unitSystem: google.maps.UnitSystem.IMPERIAL,
-                    avoidHighways: false,
-                    avoidTolls: false,
-                }
+                setMileageData({...mileageData, destination: address});
+                return new Promise((resolve,reject)=>{
+                    const request = {
+                        origins: [mileageData.source],
+                        destinations: [address],
+                        travelMode: google.maps.TravelMode.DRIVING,
+                        unitSystem: google.maps.UnitSystem.IMPERIAL,
+                        avoidHighways: false,
+                        avoidTolls: false,
+                    }
 
-                const service = new google.maps.DistanceMatrixService();
-                service.getDistanceMatrix(request)
-                .then((response)=>{
-                    let dist = response.rows[0].elements[0].distance.text;
-                    setMileageData({...mileageData, distance: Math.ceil(parseFloat(dist))});
-                })
-                .catch(e=>{
-                    alert('There was an error obtaining the distance.');
-                    console.error(e);
+                    const service = new google.maps.DistanceMatrixService();
+                    service.getDistanceMatrix(request)
+                    .then((response)=>{
+                        let dist = response.rows[0].elements[0].distance.text;
+                        let finalDistance = Math.ceil(parseFloat(dist));
+                        setMileageData({...mileageData, distance: finalDistance});
+                        resolve(finalDistance);
+
+                    })
+                    .catch(e=>{
+                        alert('There was an error obtaining the distance.');
+                        console.error(e);
+                        reject(e);
+                    });
+
                 });
+                
             }
 
-            const checkout = () => {
-                axios.get(`https://tvft0y4gw7.execute-api.us-east-2.amazonaws.com/default/optraffic_calculator-checkout?mileage=${mileageData.distance}&course=${formData.course}`, {
+            const checkout = (course, distanceInMiles, contactId) => {
+                setCalculateLoading(true);
+                axios.get(`https://tvft0y4gw7.execute-api.us-east-2.amazonaws.com/default/optraffic_calculator-checkout?mileage=${distanceInMiles}&course=${course}&contactId=${contactId}`, {
                     headers: {
                         'X-API-KEY': "0CzWNJrHdF5ZSTo5hdFKYM41uDrXeKXb"
                     }
                 })
                 .then(({data})=> {
+                    setCalculateLoading(false);
                     window.location = data.checkout_session.url;
                 })
                 .catch(e=>{
+                    setCalculateLoading(false);
                     console.error(e);
                     alert('error with checkout, try ');
                 })
             }
 
+            const markContactAsPaid = (contact_id, tag='customer') => {
+                return new Promise((res,rej)=>{
+                        
+                        axios.post(
+                            `https://services.leadconnectorhq.com/contacts/${contact_id}/tags`, 
+                            {
+                                tags: [tag]
+                            },
+                            REACHME_HEADERS)
+                            .then(response => {
+                                res(response.data)
+                                console.log('tag Response:', response.data);
+                            })
+                            .catch(error => {
+                                rej(error.message);
+                                console.error('tag Error:', error.response ? error.response.data : error.message);
+                            }); 
+                    }
+                )    
+            }
+
             return (
                 <main className="rdMain">
                     <aside>
-                        <article style={{display: curPage == 0 ? 'block' : 'none'}}  role="here">
+                        <article style={{display: curPage == 88 ? 'block' : 'none'}}  role="here">
                             <form className={ attempted ? 'errored' : ''} onSubmit={handleSubmit} role="here" ref={formRef}>
                                 <input type="text" name="citationNumber" value={formData.citationNumber} onChange={handleChange} placeholder="Citation Number" required />
                                 
@@ -248,7 +363,7 @@
                                         <option value="IDI">Intermediate Driver Improvement (IDI) 8 hrs.</option>
                                         <option value="ADI8">Aggressive Driver Improvement (ADI) 8 hrs.</option>
                                         <option value="ADI12">Advanced Driver Improvement (ADI) 12 hrs.</option>
-                                        <option value="ADI12CO">Advanced Driver Improvement (ADICO) 12 hrs. Court Ordered</option>
+                                        <option value="ADI12CO">Advanced Driver Improvement (ADI12CO) 12 hrs. Court Ordered</option>
                                     </select>
                                     <p id="courseError" className="error-message">Please select a course.</p>
                                 </div>
@@ -299,26 +414,52 @@
                                 </label>                                
                             </form>
                         </article>
+                        <article style={{display: curPage == 0 ? 'block' : 'none'}} role="there">
+                            {formId && (<iframe
+                                src={"https://reachme.optrafficschool.com/widget/form/" + formId}
+                                style={{width:"100%",height:"100%",border:"none", borderRadius:"3px" }}
+                                id={"inline-" + formId}
+                                data-layout="{'id':'INLINE'}"
+                                data-trigger-type="alwaysShow"
+                                data-trigger-value=""
+                                data-activation-type="alwaysActivated"
+                                data-activation-value=""
+                                data-deactivation-type="neverDeactivate"
+                                data-deactivation-value=""
+                                data-form-name="Register Now"
+                                data-height="1234"
+                                data-layout-iframe-id={"inline-" + formId}
+                                data-form-id={formId}
+                                title="Register Now">
+                            </iframe>)}
+                            
+                        </article>
                         <article style={{display: curPage == 1 ? 'block' : 'none'}} role="here">
                             <h3>Where are we picking you up?</h3>
-                            <label> Pick Up Location:
-                                <input type="text" name="source" onBlur={(e)=>calculateDistance(e.target.value)} placeholder="123 Main Street, Jacksonville, FL" required />
+                            <label> Pick Up Location: 
+                                <input type="text" ref={pickUpLocationRef} name="source" onBlur={(e)=>calculateDistance(e.target.value)} placeholder="123 Main Street, Jacksonville, FL" required />
                             </label>
+                            { calculateLoading && (<LoadingIcon size="small" />)}
                             { mileageData.distance && (<p style={{marginBottom:'30px'}} role="">Total Distance: {mileageData.distance}</p>)}
                             <button className="danger" type="button" name="noPickUp" onClick={()=>{ noPickUp() }}>I require No Pick Up</button>
                         </article>
 
                         <article style={{display: curPage == 2 ? 'block' : 'none'}} role="">
-                            <button onClick={()=>checkout()} class="button">Proceed To Checkout</button>
+                            { calculateLoading && (<LoadingIcon size="medium" />)}
+                            { !calculateLoading && (<button onClick={()=>checkout(formData.course,mileageData.distance)} className="button">Proceed To Checkout</button>)}
                         </article>
                         <article style={{display: curPage == 3 ? 'block' : 'none'}}  role="here">
                             Thank you for completing the initial registration. The next steps are for you to receive and email with a link to book your instruction times. 
                             Feel free to reach out to us if you have any questions or need special assistance.
                         </article>
+                        <article style={{display: curPage == 4 ? 'block' : 'none'}}  role="here">
+                            Thanks for your consideration, please come back and complete registration when it's a better time for you.
+                            Feel free to reach out to us if you have any questions or need special assistance.
+                        </article>
                     </aside>
                     <div className="actions">
-                        { curPage > 0 && curPage != 3 && !(curPage == 1 && submitted) && (<button onClick={()=>{ prevStep() }} type="button">Previous</button>) }
-                        { curPage < 3 && (<button type="button" onClick={()=>{ nextStep() }}>Next</button>) }
+                        { curPage > 0 && [0,2,3,4].indexOf(curPage) == -1 && !(curPage == 1 && submitted) && (<button onClick={()=>{ prevStep() }} type="button">Previous</button>) }
+                        { curPage < 3 && curPage != 0 && curPage != 2 && (<button type="button" onClick={()=>{ nextStep() }}>Next</button>) }
                     </div>
                 </main> 
             );

@@ -2,6 +2,10 @@ import Stripe from 'stripe';
 
 const mode = process.env.SYSTEM_MODE;
 
+
+const SUCCESS_URL = mode == 'PROD' ? process.env.SUCCESS_URL : process.env.TESTING_URL;
+const CANCEL_URL = mode == 'PROD' ? process.env.CANCEL_URL : process.env.TESTING_URL;
+
 const stripe = new Stripe(mode == 'PROD' ? process.env.STRIPE_SECRET_PROD_KEY : process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2023-10-16', // Use the latest API version
 });
@@ -13,7 +17,20 @@ const COURSES = {
     'IDI': mode == 'PROD' ? 'price_1R6brgP8nuWWRch5PwUqxWPt' : 'price_1QlyJaP8nuWWRch5e8QSjuJh',
     'ADI8': mode == 'PROD' ? 'price_1QlyQeP8nuWWRch5FV8t1CGz' : 'price_1QlyKJP8nuWWRch5oBth9AIk',
     'ADI12': mode == 'PROD' ? 'price_1QlyRCP8nuWWRch5ZpvwjyIY' : 'price_1QlyKqP8nuWWRch5UWUAWf5P',
-    'ADI12CO' : mode == 'PROD' ? 'price_1R6cUOP8nuWWRch5OR2cimUc' : 'price_1R6cVGP8nuWWRch5yZtj7ezT'
+    'ADI12CO' : mode == 'PROD' ? 'price_1R6cUOP8nuWWRch5OR2cimUc' : 'price_1R6cVGP8nuWWRch5yZtj7ezT',
+    
+    'BDI-W': mode == 'PROD' ? 'price_1REacdP8nuWWRch5337mk966' : 'price_1REaSbP8nuWWRch5dwYqDzxd',
+    'TLSAE-W': mode == 'PROD' ? 'price_1REacUP8nuWWRch5FuVWAXTM' : 'price_1REaV3P8nuWWRch5FSv4YY2o',
+    'IDI-W': mode == 'PROD' ? 'price_1REacQP8nuWWRch5c8f9gEjB' : 'price_1REaWJP8nuWWRch5FPOO6KR6',
+    'ADI8-W': mode == 'PROD' ? 'price_1REacMP8nuWWRch55OAhWoQT' : 'price_1REaX7P8nuWWRch5XO9HOgQL',
+    'ADI12-W': mode == 'PROD' ? 'price_1REacJP8nuWWRch5vmX0P6zc' : 'price_1REaXlP8nuWWRch5G1IJ5KGT',
+    
+    
+    'BDC': mode == 'PROD' ? 'price_1REacHP8nuWWRch5SFuaGmXV' : 'price_1REaYTP8nuWWRch5NuxjycgS',
+    'IDC': mode == 'PROD' ? 'price_1REacBP8nuWWRch5ThFZC17E' : 'price_1REaZNP8nuWWRch5ACgqOGUq',
+    'ADC': mode == 'PROD' ? 'price_1REac7P8nuWWRch5luoTyi3s' : 'price_1REaZzP8nuWWRch5Sf81owhr',
+    'ASDC': mode == 'PROD' ? 'price_1REac5P8nuWWRch51nmTf4Ue' : 'price_1REaaYP8nuWWRch5MyWR2rBV',
+    'DCP': mode == 'PROD' ? 'price_1REac2P8nuWWRch5NHYMQ8HO' : 'price_1REabJP8nuWWRch5xRkbfnqV'
 };
 const MILEAGE_PRICE_ID = mode == 'PROD' ? 'price_1QlyN4P8nuWWRch5OzvaC9e8' : 'price_1QlyLwP8nuWWRch5UejKLzaR';
 
@@ -47,6 +64,7 @@ export const handler = async (event) => {
     // Extract the mileage query parameter
     const mileage = event.queryStringParameters && event.queryStringParameters.mileage;
     const course = event.queryStringParameters && event.queryStringParameters.course;
+    const contact_id = event.queryStringParameters && event.queryStringParameters.contactId;
 
     if (!mileage) {
         return {
@@ -83,8 +101,8 @@ export const handler = async (event) => {
             payment_method_types: ['card'],
             line_items: lineItems,
             mode: 'payment',
-            success_url: process.env.SUCCESS_URL,
-            cancel_url: process.env.CANCEL_URL,
+            success_url: SUCCESS_URL + "?step=thanks&cid=" + contact_id + "&cancel=true",
+            cancel_url: CANCEL_URL + "?step=thanks_cancel&cid=" + contact_id,
         });
 
         return {

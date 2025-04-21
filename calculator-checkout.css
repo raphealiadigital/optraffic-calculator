@@ -9,6 +9,10 @@ body main.rdMain {
     max-width: 800px; 
  margin: 0 auto;
 }
+body #root {
+    min-width: 100%;
+    min-height: 100vh;
+}
 form {
     background-color: white;
     padding: 30px;
@@ -86,4 +90,8 @@ button:hover {
 /* Optional: Style valid inputs (for contrast) */
 .errored input:valid, .errored select:valid {
     border: 2px solid green;
+}
+
+iframe {
+    min-height: 1200px
 }
